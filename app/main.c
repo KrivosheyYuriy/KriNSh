@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -8,7 +7,8 @@
 #include <sys/mount.h>
 #include <stdint-gcc.h>
 #include <sys/stat.h>
-#define _GNU_SOURCE
+#define __USE_GNU
+#include <stdio.h>asdf
 
 void printEnv(char* var) {
     char* varPtr = getenv(var);
@@ -74,14 +74,6 @@ bool appendToFile(char* path1, char* path2) {
     return true;
 }
 
-char* concat(const char *s1, const char *s2) {
-    char *result = malloc(strlen(s1) + strlen(s2) + 1);
-    strcpy(result, s1);
-    memset (s1,'\0',sizeof(s1));
-    strcat(result, s2);
-    return result;
-}
-
 void makeDump(DIR* dir, char* path) {
     FILE* res = fopen("res.txt", "w+");
     fclose(res);
@@ -101,9 +93,6 @@ bool stringEquals(const char* string1, const char* string2) {
     return !strcmp(string1, string2);
 }
 
-const char* vfs = "/tmp/cronvfs";
-const char* crontab = "/var/spool/cron/crontabs";
-
 void mountVFS(char* SOURCE) {
     char* MOUNT_POINT = "/tmp/vfs";
     struct stat st;
@@ -121,102 +110,11 @@ void mountVFS(char* SOURCE) {
     }
 
     printf("VFS успешно смонтирован в %s\n", MOUNT_POINT);
-    return;
-}
-
-static void cron_create(int i, char *path, char *str) {
-    FILE *f;
-    char *filename;
-
-    sprintf(filename, "task%d", i);
-    concat(path, filename);
-    free(filename);
-
-    f = fopen(path, "w");
-    if (f) {
-        fprintf(f, "%s\n", str);
-        fclose(f);
-    }
-
-}
-
-
-static void cron_list(const char *filename, char *path) {
-    int i = 0;
-    int c;
-    char* str;
-    FILE *f = fopen(filename, "r");
-    if (!f) {
-        perror(filename);
-        return;
-    }
-
-    while ((c = fgetc(f)) != EOF) {
-        if (c != '\n') {
-            concat(&str, (const char *) c);
-            continue;
-        }
-        if (strlen(str) && str[0] != '#') {
-            cron_create(i, path, str);
-            i++;
-        }
-        str = "";
-    }
-    fclose(f);
-}
-
-
-void cron_mount() {
-    int mr;
-
-    mr = mkdir(vfs, 0777);
-    if (mr == -1) {
-        perror(vfs);
-        return;
-    }
-
-    mr = mount("tmpfs", vfs, "tmpfs", 0, NULL);
-    if (mr == -1) {
-        perror("mount");
-        return;
-    }
-}
-
-void cron_umount() {
-    umount(vfs);
-    rmdir(vfs);
-}
-
-void cron() {
-    DIR *dir;
-    struct dirent *dirent;
-    char* path = crontab;
-    char* vfs_path = vfs;
-
-    dir = opendir(crontab);
-    if (!dir) {
-        perror(crontab);
-        return;
-    }
-
-    while ((dirent = readdir(dir)) != NULL) {
-        struct stat buf;
-
-        asprintf(path, "%s", dirent->d_name);
-
-        lstat(path, &buf);
-        if ((buf.st_mode & S_IFMT) == S_IFREG) {
-            cron_list(path, &vfs_path);
-        }
-
-    }
-
-    closedir(dir);
 }
 
 int main() {
     signal(SIGHUP, sighup);
-
+//    printf("%d\n", getppid());
     char input[100];
     FILE *file = fopen("hist.txt", "a");
     printf("$ ");
@@ -277,7 +175,7 @@ int main() {
             command[strlen(command) - 1] = '\0';
             mountVFS(command);
         }
-        else if(stringEquals(command, "\\proc")) {
+        else if(stringEquals(command, "\\mem")) {
             command = strtok(NULL, " ");
             command[strlen(command) - 1] = '\0';
 

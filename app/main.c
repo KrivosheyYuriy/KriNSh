@@ -117,7 +117,6 @@ int main() {
 //    printf("%d\n", getppid());
     char input[100];
     FILE *file = fopen("hist.txt", "a");
-    printf("Hello!\n");
     printf("$ ");
     while (fgets(input, sizeof(input), stdin)) {
 
